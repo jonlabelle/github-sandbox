@@ -1,0 +1,73 @@
+name: pwsh cmd error behavior
+
+on:
+  workflow_dispatch:
+
+jobs:
+  error-behavior:
+    name: Run on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@main
+
+      - name: Demo command error behavior
+        shell: pwsh
+        run: |
+          ##
+          # The problem
+          #
+          # Errors generated from *PowerShell* commands will exit
+          # immediately upon failure because $ErrorActionPreference is
+          # automatically set to 'Stop' by the runner. This of course can be
+          # changed during execution, or overridden at the command-level using
+          # the -ErrorAction parameter.
+          ##
+
+          # Show the current value for $ErrorActionPreference (will output 'ErrorActionPreference: Stop'):
+          Write-Output ('ErrorActionPreference: {0}' -f $ErrorActionPreference)
+
+          # e.g.: The following PowerShell command (Get-Content) *would* throw an
+          # error and exit immediately if the -Path (file) param was not found.
+          # But we're not here to test that particular behavior, so just read
+          # the raw JSON file contents into the $json variable and continue on.
+          $json = Get-Content -Path (Join-Path "$pwd" '.github' 'matrix-configs' 'config01.json') -Raw
+
+          # First let's run a command that returns a successful exit code, or 0.
+          $json | jq
+          if ($LastExitCode -ne 0) {
+            # This block should never be reached because we're passing a valid
+            # JSON document into jq for display
+            throw ('An unexpected exit code was detected: {0}' -f $LastExitCode)
+          }
+
+          # Now let's run a command that returns a non-zero exit code, in this case the code will be 5.
+          $json | jq -n '.[]'
+          # The error should read: "jq: error (at <unknown>): Cannot iterate over null (null)"
+
+          Write-Warning "This warning is written to output, even though the previous command exited with: $LastExitCode"
+          Write-Warning 'The action/step will indeed fail, however, any command or operation hereafter will still be performed'
+
+          ##
+          # The fix
+          #
+          # Always check the command's $LastExitCode after it finishes, otherwise,
+          # you risk subsequent commands running even after a previous command fails.
+          ##
+
+          # Run the error-prone command again...
+          $json | jq -n '.[]'
+
+          # but this time check $LastExitCode for a non-zero value, and exit immediately.
+          if ($LastExitCode -ne 0) {
+            # Exit with $LastExitCode so nothing else in the script gets executed.
+            exit $LastExitCode
+          }
+
+          Write-Warning 'This warning will never be seen because the script has already exited'
+
+          # ... <insert other stuff that will never run if a prior command exits with a non-zero code>

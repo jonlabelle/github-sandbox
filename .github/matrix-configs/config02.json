@@ -1,0 +1,19 @@
+{
+  "include": [
+    {
+      "label": "My fourth item",
+      "server-name": "host04",
+      "enable": true
+    },
+    {
+      "label": "My fifth item",
+      "server-name": "host05",
+      "enable": true
+    },
+    {
+      "label": "I am configured, but not enabled. I will not be run.",
+      "server-name": "host06",
+      "enable": false
+    }
+  ]
+}
