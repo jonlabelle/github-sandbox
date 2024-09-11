@@ -1,0 +1,43 @@
+name: inline script from input
+
+on:
+  workflow_call:
+    inputs:
+      pre-build-inline-script:
+        description: >-
+          A Bash inline script that will be called just before running the
+          command to build the container image.
+        required: false
+        type: string
+        default: ''
+
+      # -----------------------------------------------------------------------------
+      # NOTE: Unfortunately you cannot specify which shell to use from an input parameter.
+      # The following input parameter will not work.
+      # -----------------------------------------------------------------------------
+      # pre-build-inline-shell:
+      #   description: 'The shell to run the script in. Accepted values: bash, pwsh, python, sh, cmd. The default is bash.'
+      #   required: false
+      #   type: string
+      #   default: 'bash'
+
+jobs:
+  pre-build:
+    name: Run on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Bash interpreter is available on all platforms
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Run the Bash pre-build script
+        if: ${{ inputs.pre-build-inline-script != '' }} # Only run the script if the input is not empty
+        shell: bash
+        run: |
+          ${{ inputs.pre-build-inline-script }}
+
+      - name: Build the container image
+        shell: bash
+        run: |
+          echo 'Building the container image...'
+          echo 'e.g.: docker build -t my-image:latest .'

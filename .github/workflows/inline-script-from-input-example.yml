@@ -1,0 +1,13 @@
+name: inline script from input example
+
+on:
+  workflow_dispatch:
+
+jobs:
+  example:
+    uses: ./.github/workflows/inline-script-from-input.yml
+    with:
+      pre-build-inline-script: |
+        echo 'This script will run right before the command to build the container image is executed.'
+        echo 'Do things to setup the environment like replace tokens in files, etc.'
+        echo 'e.g.: sed -i 's/old/new/g' file.txt'
